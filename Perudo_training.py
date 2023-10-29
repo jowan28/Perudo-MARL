@@ -35,12 +35,11 @@ class QLearningAgent:
 
     def update_q_network(self, state, action, reward, next_state):
         with tf.GradientTape() as tape:
-            q_values = self.q_network.model(tf.convert_to_tensor(state[None, :], dtype=tf.float32))
-            next_q_values = self.q_network.model(tf.convert_to_tensor(next_state[None, :], dtype=tf.float32))
+            q_values = self.q_network.model(state)
+            next_q_values = self.q_network.model(next_state)
             target_q = q_values.numpy()
-            target_q[0, action] = reward + self.discount_factor * np.max(next_q_values)
+            target_q = reward + self.discount_factor * np.max(next_q_values)
             loss = tf.reduce_mean(tf.square(target_q - q_values))
-            print(loss)
         grads = tape.gradient(loss, self.q_network.model.trainable_variables)
         self.optimizer.apply_gradients(zip(grads, self.q_network.model.trainable_variables))
 
@@ -56,21 +55,30 @@ def train_perudo_agents(env, agents, episodes, agent_number, script_location):
             reward_store = np.zeros((len(agents)))
             env.reset()
             done = False
-            while not done:
+            failed = False
+            while (not done) or (failed):
                 #current state = next state
                 cur_ID = env.current_player.name
                 #pick the correct agent
-                state = [tf.convert_to_tensor(np.expand_dims(env.bet_history,axis=0)), tf.convert_to_tensor(np.expand_dims(env.current_player.Dice_numbers(),axis=0))]
-                if state_store[cur_ID] != 0:
+                if failed:
+                    #we still need to train the model
+                    state = state_store[cur_ID]
+                    print('correcting bad bid')
+
                     agents[cur_ID].update_q_network(state_store[cur_ID], action_store[cur_ID], reward_store[cur_ID], state)
-                action = agents[cur_ID].choose_action(state)
-                reward, done = env.step(action)
-                row = [episode,cur_ID,reward]
-                scribe.write_to_log(row)
-                #store state, action, reward
-                state_store[cur_ID] = state
-                action_store[cur_ID] = action
-                reward_store[cur_ID] = reward
+                    failed = False
+                else:
+                    state = [tf.convert_to_tensor(np.expand_dims(env.bet_history,axis=0)), tf.convert_to_tensor(np.expand_dims(env.current_player.Dice_numbers(),axis=0))]
+                    if state_store[cur_ID] != 0:
+                        agents[cur_ID].update_q_network(state_store[cur_ID], action_store[cur_ID], reward_store[cur_ID], state)
+                    action = agents[cur_ID].choose_action(state)
+                    reward, done, failed = env.step(action)
+                    row = [episode,cur_ID,reward]
+                    scribe.write_to_log(row)
+                    #store state, action, reward
+                    state_store[cur_ID] = state
+                    action_store[cur_ID] = action
+                    reward_store[cur_ID] = reward
     else:
         for episode in range(episodes):
             #state_store = np.zeros((len(agents)))
@@ -79,20 +87,27 @@ def train_perudo_agents(env, agents, episodes, agent_number, script_location):
             reward_store = np.zeros((len(env.players)))
             env.reset()
             done = False
-            while not done:
+            failed = False
+            while (not done) or (failed):
                 #current state = next state
                 cur_ID = env.current_player.name
                 #pick the correct agent
                 state = [tf.convert_to_tensor(np.expand_dims(env.bet_history,axis=0)), tf.convert_to_tensor(np.expand_dims(env.current_player.Dice_numbers(),axis=0))]
-                if state_store[cur_ID] != 0:
-                    #there is only one network
+                if failed:
+                    #we still need to train the model
+                    state = state_store[cur_ID]
+                    print('correcting bad bid')
                     agents.update_q_network(state_store[cur_ID], action_store[cur_ID], reward_store[cur_ID], state)
-                action = agents.choose_action(state)
-                reward, done = env.step(action)
-                row = [episode,cur_ID,reward]
-                scribe.write_to_log(row)
-                #store state, action, reward
-                state_store[cur_ID] = state
-                action_store[cur_ID] = action
-                reward_store[cur_ID] = reward
-
+                    failed = False
+                else:
+                    state = [tf.convert_to_tensor(np.expand_dims(env.bet_history,axis=0)), tf.convert_to_tensor(np.expand_dims(env.current_player.Dice_numbers(),axis=0))]
+                    if state_store[cur_ID] != 0:
+                        agents.update_q_network(state_store[cur_ID], action_store[cur_ID], reward_store[cur_ID], state)
+                    action = agents.choose_action(state)
+                    reward, done, failed = env.step(action)
+                    row = [episode,cur_ID,reward]
+                    scribe.write_to_log(row)
+                    #store state, action, reward
+                    state_store[cur_ID] = state
+                    action_store[cur_ID] = action
+                    reward_store[cur_ID] = reward

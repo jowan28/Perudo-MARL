@@ -84,6 +84,7 @@ class Perudo_environment():
 			next_bet = action
 			print('next bet', next_bet)
 			done = False
+			failed = False
 			if next_bet == DUDO:
 				bet_string = 'Dudo!'
 			else:
@@ -103,15 +104,16 @@ class Perudo_environment():
 				reward = 2
 		except Exception as e:
 			print(f"Exception: {e}")
-			quantity = int((raw_action%36)+1)
-			value = int(np.ceil((raw_action+1)/6))
+			quantity = raw_action%36 +1
+			value = raw_action%6 + 1
 			print("The game ends due to an illegal bid.")
 			print(f'The bet was: {quantity}x{value}')
 			#end the game
 			done = True
-			reward = -1 
+			reward = -1
+			failed = True 
 			#self.round_over = True
-		return reward, done
+		return reward, done, failed
 	
 	def action_translate(self,raw_action):
 		#the input is 6*players + 1 long, the last is dudo
@@ -121,8 +123,8 @@ class Perudo_environment():
 		else:
 			#1x1 2x1 3x1 ... 36x1 1x2 ...
 			#this is bidding
-			quantity = int((raw_action%36)+1)
-			value = int(np.ceil((raw_action+1)/6))
+			quantity = raw_action%36 + 1
+			value = raw_action%6 + 1
 			bet = create_bet(quantity, value, self.current_bet, self, self.current_player.game)
 			return bet
 
