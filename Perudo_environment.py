@@ -110,7 +110,7 @@ class Perudo_environment():
 			print(f'The bet was: {quantity}x{value}')
 			#end the game
 			done = True
-			reward = -1
+			reward = -10
 			failed = True 
 			#self.round_over = True
 		return reward, done, failed
@@ -147,7 +147,7 @@ class Perudo_environment():
 			self.first_player = previous_player
 			self.remove_die(previous_player)
 			#correct dudo
-			reward = 1
+			reward = 4
 		return reward
 
 	def count_dice(self, value):

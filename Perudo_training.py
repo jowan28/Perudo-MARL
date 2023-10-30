@@ -38,7 +38,7 @@ class QLearningAgent:
             q_values = self.q_network.model(state)
             next_q_values = self.q_network.model(next_state)
             target_q = q_values.numpy()
-            target_q = reward + self.discount_factor * np.max(next_q_values)
+            target_q[0,int(action)] = reward + self.discount_factor * np.max(next_q_values)
             loss = tf.reduce_mean(tf.square(target_q - q_values))
         grads = tape.gradient(loss, self.q_network.model.trainable_variables)
         self.optimizer.apply_gradients(zip(grads, self.q_network.model.trainable_variables))
