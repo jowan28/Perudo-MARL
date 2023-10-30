@@ -62,10 +62,9 @@ def train_perudo_agents(env, agents, episodes, agent_number, script_location):
                 #pick the correct agent
                 if failed:
                     #we still need to train the model
-                    state = state_store[cur_ID]
                     print('correcting bad bid')
 
-                    agents[cur_ID].update_q_network(state_store[cur_ID], action_store[cur_ID], reward_store[cur_ID], state)
+                    agents[fail_ID].update_q_network(state_store[fail_ID], action_store[fail_ID], reward_store[fail_ID], failed_state)
                     failed = False
                 else:
                     state = [tf.convert_to_tensor(np.expand_dims(env.bet_history,axis=0)), tf.convert_to_tensor(np.expand_dims(env.current_player.Dice_numbers(),axis=0))]
@@ -73,6 +72,9 @@ def train_perudo_agents(env, agents, episodes, agent_number, script_location):
                         agents[cur_ID].update_q_network(state_store[cur_ID], action_store[cur_ID], reward_store[cur_ID], state)
                     action = agents[cur_ID].choose_action(state)
                     reward, done, failed = env.step(action)
+                    if failed:
+                        failed_state = state
+                        fail_ID = cur_ID
                     row = [episode,cur_ID,reward]
                     scribe.write_to_log(row)
                     #store state, action, reward
@@ -95,9 +97,8 @@ def train_perudo_agents(env, agents, episodes, agent_number, script_location):
                 state = [tf.convert_to_tensor(np.expand_dims(env.bet_history,axis=0)), tf.convert_to_tensor(np.expand_dims(env.current_player.Dice_numbers(),axis=0))]
                 if failed:
                     #we still need to train the model
-                    state = state_store[cur_ID]
                     print('correcting bad bid')
-                    agents.update_q_network(state_store[cur_ID], action_store[cur_ID], reward_store[cur_ID], state)
+                    agents.update_q_network(state_store[fail_ID], action_store[fail_ID], reward_store[fail_ID], failed_state)
                     failed = False
                 else:
                     state = [tf.convert_to_tensor(np.expand_dims(env.bet_history,axis=0)), tf.convert_to_tensor(np.expand_dims(env.current_player.Dice_numbers(),axis=0))]
@@ -105,6 +106,9 @@ def train_perudo_agents(env, agents, episodes, agent_number, script_location):
                         agents.update_q_network(state_store[cur_ID], action_store[cur_ID], reward_store[cur_ID], state)
                     action = agents.choose_action(state)
                     reward, done, failed = env.step(action)
+                    if failed:
+                        failed_state = state
+                        fail_ID = cur_ID
                     row = [episode,cur_ID,reward]
                     scribe.write_to_log(row)
                     #store state, action, reward
